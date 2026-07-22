@@ -1,0 +1,70 @@
+services:
+  postgres_db:
+    image: postgres:15
+    container_name: quant_postgres
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  web_app:
+    build: .
+    container_name: quant_flask_app
+    restart: always
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres_db:5432/${POSTGRES_DB}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - FINNHUB_API_KEY=${FINNHUB_API_KEY}
+      - TZ=Asia/Kolkata
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/model_cache
+      - ./vector_memory:/app/vector_memory
+      - ./saved_weights:/app/saved_weights
+      - ./scrape_checkpoints:/app/scrape_checkpoints
+
+  pipeline_worker:
+    build: .
+    container_name: quant_pipeline_worker
+    restart: always
+    command: python main.py
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres_db:5432/${POSTGRES_DB}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - FINNHUB_API_KEY=${FINNHUB_API_KEY}
+      - TZ=Asia/Kolkata
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/model_cache
+      - ./vector_memory:/app/vector_memory
+      - ./saved_weights:/app/saved_weights
+      - ./scrape_checkpoints:/app/scrape_checkpoints
+
+volumes:
+  postgres_data:

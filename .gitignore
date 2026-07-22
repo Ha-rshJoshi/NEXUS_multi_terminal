@@ -1,0 +1,28 @@
+# Secrets -- never commit real API keys
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.Python
+
+# SQLite (local dev DB -- Postgres is used in docker-compose)
+*.db
+
+# Generated/runtime data -- rebuilt automatically, shouldn't live in git
+model_cache/
+saved_weights/
+vector_memory/
+scrape_checkpoints/
+model_registry.json
+
+# Editor/OS cruft
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Documentation PDFs -- kept locally, not tracked in the repo
+NEXUS_Codebase_Walkthrough.pdf
+NEXUS_Full_Project_Documentation.pdf

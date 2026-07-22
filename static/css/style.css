@@ -1,0 +1,697 @@
+/* ==========================================================================
+   NEXUS -- Premium Terminal theme
+   Background matches the hero art's dark midnight blue (#050814).
+   ========================================================================== */
+
+:root{
+  --nexus-bg: #050814;
+  --nexus-panel: #0b1024;
+  --nexus-panel-alt: #0f1530;
+  --nexus-border: #1c2444;
+  --nexus-text: #e9ecff;
+  --nexus-text-dim: #8b93c4;
+  --nexus-cyan: #22d3ee;
+  --nexus-magenta: #c026f7;
+  --nexus-orange: #fb923c;
+  --nexus-green: #34d399;
+  --nexus-red: #f87171;
+}
+
+body{
+  background: radial-gradient(ellipse at top, #0c1230 0%, var(--nexus-bg) 55%, #030512 100%);
+  color: var(--nexus-text);
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  min-height: 100vh;
+}
+
+/* ---------------- Hero ---------------- */
+.nexus-hero{
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: var(--nexus-bg);
+  border-bottom: 1px solid var(--nexus-border);
+}
+.nexus-hero img{
+  width: 100%;
+  height: auto;
+  max-height: 480px;
+  object-fit: cover;
+  display: block;
+  filter: saturate(1.05);
+}
+.nexus-hero .nexus-hero-overlay{
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(5,8,20,0) 55%, rgba(5,8,20,0.95) 100%);
+  pointer-events: none;
+}
+.nexus-hero-subtitle{
+  text-align: center;
+  padding: 14px 10px 22px;
+  background: var(--nexus-bg);
+}
+.nexus-hero-subtitle h2{
+  margin: 0;
+  font-weight: 300;
+  letter-spacing: 3px;
+  font-size: 1.15rem;
+  color: var(--nexus-cyan);
+  text-transform: uppercase;
+}
+
+/* ---------------- Shared panels ---------------- */
+.nexus-panel{
+  background: var(--nexus-panel);
+  border: 1px solid var(--nexus-border);
+  border-radius: 12px;
+}
+
+.nexus-section-title{
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--nexus-text);
+  text-transform: uppercase;
+  font-size: 0.95rem;
+  border-left: 3px solid var(--nexus-cyan);
+  padding-left: 10px;
+  margin-bottom: 14px;
+}
+
+/* ---------------- Page 1: landing (hero + status only) ---------------- */
+.nexus-page-landing{
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+.nexus-page-landing .nexus-hero img{
+  /* Full-bleed banner: span the entire width edge-to-edge like the
+     reference art, scaled by its own native 1584x672 ratio (width:100%,
+     height:auto) rather than being force-fit into a fixed-height box.
+     Because it's uniform scaling (not object-fit:cover cropping), the
+     complete image -- wordmark, zigzag accent, both bull/bear legs -- is
+     always fully visible at any viewport width, never cropped. */
+  width: 100%;
+  height: auto;
+  max-height: none;
+  object-fit: contain;
+}
+.nexus-page-landing .nexus-hero-subtitle{ padding: 6px 10px 12px; }
+.nexus-page-landing .container-fluid{
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
+}
+.nexus-page-landing .nexus-panel{ width: 100%; max-width: 1600px; padding: 1.75rem 2.5rem !important; }
+
+/* ---------------- Page 2: details (per-ticker slider + Execution Desk) ---------------- */
+.nexus-page-details{
+  position: relative;
+  /* Plain CSS file -- Jinja doesn't render this, so the /static/ path is
+     hardcoded directly rather than via url_for(). Matches Flask's default
+     static URL prefix. */
+  background-image: url("/static/img/candlestick_bg.jpg");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  border-top: 1px solid var(--nexus-border);
+}
+.nexus-page-details-overlay{
+  position: absolute;
+  inset: 0;
+  /* Previous overlay (0.94-0.97 opacity) was nearly fully opaque, which
+     hid the candlestick_bg.jpg image almost entirely -- it was technically
+     wired up correctly but invisible underneath. Lowered so the chart
+     background actually reads while keeping foreground text/cards legible. */
+  background: linear-gradient(180deg, rgba(5,8,20,0.55) 0%, rgba(5,8,20,0.8) 100%);
+  pointer-events: none;
+}
+.nexus-page-details .container-fluid{ position: relative; z-index: 1; }
+
+/* ---------------- Status / ingestion ---------------- */
+.nexus-page-landing .nexus-section-title{ font-size: 1.25rem; margin-bottom: 6px; }
+#nexus-fetching-label{ font-size: 1rem !important; }
+
+#nexus-status-panel{ margin-top: 8px; }
+#nexus-status-panel .status-row{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 13px 8px;
+  border-bottom: 1px solid var(--nexus-border);
+  font-size: 1.02rem;
+}
+#nexus-status-panel .status-row:last-child{ border-bottom: none; }
+#nexus-status-panel .status-row > span:first-child{ font-weight: 600; }
+#nexus-status-panel .status-row .text-muted{ font-size: 0.95rem; }
+.status-pill{
+  font-size: 0.85rem;
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.status-pill.pending{ background: rgba(251,146,60,0.15); color: var(--nexus-orange); }
+.status-pill.ready{ background: rgba(52,211,153,0.15); color: var(--nexus-green); }
+
+#start-prediction-btn{
+  background: linear-gradient(90deg, var(--nexus-magenta), var(--nexus-cyan));
+  border: none;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 1px;
+  padding: 12px 36px;
+  border-radius: 10px;
+  color: #04050c;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+#start-prediction-btn:disabled{
+  background: #1c2444;
+  color: var(--nexus-text-dim);
+  cursor: not-allowed;
+}
+#start-prediction-btn:not(:disabled):hover{
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px rgba(34,211,238,0.35);
+}
+
+.nexus-preview-link{
+  display: inline-block;
+  font-size: 0.78rem;
+  color: var(--nexus-text-dim);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.nexus-preview-link:hover{ color: var(--nexus-cyan); }
+
+/* ---------------- Stock cards / accordions ---------------- */
+.nexus-stock-card{
+  border: 1px solid var(--nexus-border);
+  border-radius: 14px;
+  background: var(--nexus-panel);
+  margin-bottom: 26px;
+  overflow: hidden;
+}
+.nexus-stock-header{
+  padding: 16px 20px;
+  background: var(--nexus-panel-alt);
+  border-bottom: 1px solid var(--nexus-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.nexus-stock-header h4{ margin: 0; font-weight: 700; }
+.nexus-stock-header .ticker-sub{ color: var(--nexus-text-dim); font-size: 0.85rem; }
+
+.accordion-item{
+  background: var(--nexus-panel) !important;
+  border-color: var(--nexus-border) !important;
+}
+.accordion-button{
+  background: var(--nexus-panel-alt) !important;
+  color: var(--nexus-text) !important;
+  font-weight: 600;
+}
+.accordion-button:not(.collapsed){
+  color: var(--nexus-cyan) !important;
+  box-shadow: none !important;
+}
+.accordion-button::after{ filter: invert(1) brightness(2); }
+.accordion-body{ background: var(--nexus-panel); color: var(--nexus-text); }
+
+.headline-item{
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--nexus-border);
+  font-size: 0.88rem;
+}
+.headline-item:last-child{ border-bottom: none; }
+.headline-date{ color: var(--nexus-text-dim); font-size: 0.75rem; margin-right: 8px; }
+.sentiment-badge{
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-left: 6px;
+}
+.sentiment-badge.bull{ background: rgba(52,211,153,0.18); color: var(--nexus-green); }
+.sentiment-badge.bear{ background: rgba(248,113,113,0.18); color: var(--nexus-red); }
+.sentiment-badge.neutral{ background: rgba(139,147,196,0.18); color: var(--nexus-text-dim); }
+
+.model-name-pill{
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+}
+.model-name-pill.LSTM{ background: rgba(34,211,238,0.15); color: var(--nexus-cyan); }
+.model-name-pill.Prophet{ background: rgba(192,38,247,0.15); color: var(--nexus-magenta); }
+.model-name-pill.MNN{ background: rgba(251,146,60,0.15); color: var(--nexus-orange); }
+.model-name-pill.XGBoost{ background: rgba(52,211,153,0.15); color: var(--nexus-green); }
+
+/* ---------------- Model Breakdown: per-model efficiency cards ---------------- */
+.model-efficiency-item .accordion-button{
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+/* Highlights whichever model outperformed the others for this ticker
+   (matches the server-computed "winner", see dashboard.js renderModelBreakdown) */
+.model-efficiency-item.is-winner{
+  border: 1px solid var(--nexus-green);
+  border-radius: 10px;
+  box-shadow: 0 0 16px rgba(52,211,153,0.18);
+}
+.model-efficiency-item.is-winner .accordion-button{
+  background: rgba(52,211,153,0.08) !important;
+}
+.best-model-badge{
+  display: inline-block;
+  background: rgba(52,211,153,0.18);
+  color: var(--nexus-green);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-right: 8px;
+}
+
+.metric-card{
+  background: var(--nexus-panel-alt);
+  border: 1px solid var(--nexus-border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  height: 100%;
+}
+.metric-card-label{
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--nexus-text-dim);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.metric-card-value{
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: var(--nexus-text);
+  margin-top: 5px;
+}
+.metric-card-hint{
+  font-size: 0.8rem;
+  color: var(--nexus-text-dim);
+  margin-top: 3px;
+}
+.info-tooltip{
+  cursor: help;
+  color: var(--nexus-text-dim);
+  font-size: 0.95rem;
+  line-height: 1;
+}
+.info-tooltip:hover{ color: var(--nexus-cyan); }
+
+/* ---------------- Portfolio Management ---------------- */
+#portfolio-ticker-checks .form-check-input{
+  background-color: var(--nexus-panel-alt);
+  border-color: var(--nexus-border);
+}
+#portfolio-ticker-checks .form-check-input:checked{
+  background-color: var(--nexus-magenta);
+  border-color: var(--nexus-magenta);
+}
+.nexus-portfolio-table{
+  color: var(--nexus-text);
+  border-color: var(--nexus-border);
+}
+.nexus-portfolio-table th, .nexus-portfolio-table td{
+  border-color: var(--nexus-border) !important;
+  background: transparent !important;
+  color: var(--nexus-text);
+  vertical-align: middle;
+}
+.nexus-portfolio-table thead th{
+  color: var(--nexus-text-dim);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-weight: 700;
+}
+
+/* ---------------- Winner callout banner ---------------- */
+.winner-callout{
+  background: linear-gradient(90deg, rgba(52,211,153,0.14), rgba(34,211,238,0.08));
+  border: 1px solid var(--nexus-green);
+  border-radius: 12px;
+  padding: 14px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  box-shadow: 0 0 18px rgba(52,211,153,0.15);
+}
+.winner-callout-title{
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--nexus-text);
+}
+.winner-callout-title .trophy{ margin-right: 6px; }
+.winner-callout-title .winner-callout-model-name{ color: var(--nexus-green); }
+.winner-callout-stats{
+  display: flex;
+  gap: 24px;
+  font-size: 0.92rem;
+  color: var(--nexus-text-dim);
+}
+.winner-callout-stats strong{
+  color: var(--nexus-green);
+  font-size: 1rem;
+}
+
+/* ---------------- Graphs ---------------- */
+.chart-toggle-group .btn{
+  border-color: var(--nexus-border);
+  color: var(--nexus-text-dim);
+  font-size: 0.8rem;
+}
+.chart-toggle-group .btn.active{
+  background: var(--nexus-cyan);
+  border-color: var(--nexus-cyan);
+  color: #04050c;
+  font-weight: 700;
+}
+.chart-canvas-wrap{ position: relative; height: 320px; margin-top: 14px; }
+
+/* Live Price tab: a readout bar + its own canvas box, stacked -- kept
+   separate from the plain single-canvas wrap above since the readout bar
+   needs its own natural-flow height instead of the canvas filling the
+   whole wrap (Chart.js sizes the canvas to its *direct* parent). */
+.chart-canvas-wrap-live{ height: auto; display: flex; flex-direction: column; }
+.chart-canvas-wrap-live .live-canvas-inner{ position: relative; height: 320px; margin-top: 12px; }
+
+.live-price-readout{
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 18px;
+  background: rgba(34,211,238,0.06);
+  border: 1px solid var(--nexus-border);
+  border-radius: 10px;
+  flex-wrap: wrap;
+}
+.live-price-value{ font-size: 1.35rem; font-weight: 700; color: var(--nexus-text); }
+.live-price-change{ font-size: 0.92rem; font-weight: 600; }
+.live-price-asof{ font-size: 0.78rem; color: var(--nexus-text-dim); margin-left: auto; }
+.live-dot{
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--nexus-text-dim);
+  display: inline-block;
+  flex-shrink: 0;
+}
+.live-dot.live-dot-active{
+  background: var(--nexus-green);
+  animation: live-dot-pulse 1.6s infinite;
+}
+@keyframes live-dot-pulse{
+  0%   { box-shadow: 0 0 0 0 rgba(52,211,153,0.55); }
+  70%  { box-shadow: 0 0 0 8px rgba(52,211,153,0); }
+  100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); }
+}
+
+/* ---------------- Per-ticker slider (carousel) ---------------- */
+.nexus-ticker-carousel{ padding: 0 56px; }
+.nexus-ticker-carousel .carousel-item{
+  transition: transform 0.5s ease-in-out;
+}
+.nexus-ticker-carousel .carousel-control-prev,
+.nexus-ticker-carousel .carousel-control-next{
+  width: 56px;
+  opacity: 1;
+}
+.nexus-carousel-arrow{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--nexus-panel-alt);
+  border: 1px solid var(--nexus-border);
+  color: var(--nexus-cyan);
+  font-size: 1.1rem;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.nexus-ticker-carousel .carousel-control-prev:hover .nexus-carousel-arrow,
+.nexus-ticker-carousel .carousel-control-next:hover .nexus-carousel-arrow{
+  border-color: var(--nexus-cyan);
+  box-shadow: 0 0 14px rgba(34,211,238,0.35);
+}
+.nexus-carousel-indicators{
+  position: static;
+  margin: 14px 0 0;
+}
+.nexus-carousel-indicators [data-bs-target]{
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: var(--nexus-border);
+  border: none;
+  opacity: 1;
+}
+.nexus-carousel-indicators [data-bs-target].active{
+  background-color: var(--nexus-cyan);
+}
+
+/* ---------------- INVESTRA (floating chat widget, bottom-right, site-wide) ----------------
+   Branding text/avatar content is set by dashboard.js's applyInvestraBranding()
+   from window.NEXUS_INVESTRA_CONFIG (see app.py's INVESTRA_CONFIG) -- this
+   only owns layout/position/animation, never the actual copy. */
+.investra-launcher{
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--nexus-magenta), var(--nexus-cyan));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 24px rgba(192,38,247,0.45);
+  z-index: 1090;
+  transition: transform 0.15s ease;
+}
+.investra-launcher:hover{ transform: scale(1.06); }
+.investra-launcher .investra-avatar{
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #04050c;
+}
+
+.investra-panel{
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  width: 380px;
+  max-width: calc(100vw - 32px);
+  height: 560px;
+  max-height: calc(100vh - 48px);
+  background: var(--nexus-panel);
+  border: 1px solid var(--nexus-border);
+  border-radius: 16px;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.55);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 1090;
+  animation: investra-pop-in 0.15s ease-out;
+}
+@keyframes investra-pop-in{
+  from{ opacity: 0; transform: translateY(12px) scale(0.98); }
+  to{ opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.investra-header{
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--nexus-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--nexus-panel-alt);
+}
+.investra-header-identity{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.investra-avatar{
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--nexus-magenta), var(--nexus-cyan));
+  color: #04050c;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.investra-avatar img{ width: 100%; height: 100%; object-fit: cover; }
+.investra-name{ font-weight: 700; font-size: 0.92rem; color: var(--nexus-text); }
+.investra-tagline{ font-size: 0.72rem; color: var(--nexus-text-dim); }
+.investra-close-btn{
+  background: none;
+  border: none;
+  color: var(--nexus-text-dim);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.investra-close-btn:hover{ color: var(--nexus-text); }
+.investra-form{
+  padding: 14px;
+  border-top: 1px solid var(--nexus-border);
+  display: flex;
+  gap: 8px;
+}
+
+#nexus-chat-messages{
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.chat-bubble{
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+.chat-bubble.user{
+  align-self: flex-end;
+  background: linear-gradient(90deg, var(--nexus-magenta), #7c3aed);
+  color: #fff;
+  border-bottom-right-radius: 3px;
+}
+.chat-bubble.ai{
+  align-self: flex-start;
+  background: var(--nexus-panel-alt);
+  border: 1px solid var(--nexus-border);
+  color: var(--nexus-text);
+  border-bottom-left-radius: 3px;
+}
+.chat-bubble.ai .context-note{
+  display: block;
+  margin-top: 8px;
+  font-size: 0.72rem;
+  color: var(--nexus-text-dim);
+  border-top: 1px dashed var(--nexus-border);
+  padding-top: 6px;
+}
+#nexus-chat-input-row{
+  padding: 14px;
+  border-top: 1px solid var(--nexus-border);
+  display: flex;
+  gap: 8px;
+}
+#nexus-chat-input-row input{
+  background: var(--nexus-panel-alt);
+  border: 1px solid var(--nexus-border);
+  color: var(--nexus-text);
+}
+#nexus-chat-input-row input:focus{
+  background: var(--nexus-panel-alt);
+  color: var(--nexus-text);
+  border-color: var(--nexus-cyan);
+  box-shadow: 0 0 0 0.2rem rgba(34,211,238,0.15);
+}
+/* Ticker filter select lives in the chat form header row now, deliberately
+   narrow so the query input keeps most of the width -- previously a wide
+   select pushed the input so tight that typed text wasn't visible. */
+#nexus-chat-ticker{
+  background: var(--nexus-panel-alt);
+  border: 1px solid var(--nexus-border);
+  color: var(--nexus-text-dim);
+  max-width: 92px;
+  font-size: 0.76rem;
+}
+#nexus-chat-ticker:focus{
+  background: var(--nexus-panel-alt);
+  color: var(--nexus-text-dim);
+  border-color: var(--nexus-cyan);
+  box-shadow: 0 0 0 0.15rem rgba(34,211,238,0.15);
+}
+
+#nexus-chat-input-row select{
+  background: var(--nexus-panel-alt);
+  border: 1px solid var(--nexus-border);
+  color: var(--nexus-text-dim);
+  max-width: 140px;
+}
+.typing-indicator span{
+  display: inline-block;
+  width: 6px; height: 6px;
+  margin: 0 2px;
+  border-radius: 50%;
+  background: var(--nexus-text-dim);
+  animation: nexus-typing 1s infinite ease-in-out;
+}
+.typing-indicator span:nth-child(2){ animation-delay: 0.15s; }
+.typing-indicator span:nth-child(3){ animation-delay: 0.3s; }
+@keyframes nexus-typing{
+  0%, 60%, 100%{ transform: translateY(0); opacity: 0.4; }
+  30%{ transform: translateY(-4px); opacity: 1; }
+}
+
+/* ---------------- Toasts ---------------- */
+.toast{
+  background: var(--nexus-panel) !important;
+  border: 1px solid var(--nexus-border) !important;
+  color: var(--nexus-text) !important;
+  min-width: 320px;
+}
+.toast .toast-header{
+  background: var(--nexus-panel-alt) !important;
+  color: var(--nexus-text) !important;
+  border-bottom: 1px solid var(--nexus-border) !important;
+}
+.toast .progress{
+  height: 6px;
+  background: var(--nexus-border);
+}
+.toast .progress-bar{
+  background: linear-gradient(90deg, var(--nexus-cyan), var(--nexus-magenta));
+}
+
+footer.nexus-footer{
+  color: var(--nexus-text-dim);
+  font-size: 0.78rem;
+  text-align: center;
+  padding: 30px 0;
+}
+
+.nexus-watermark{
+  margin-top: 8px;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  opacity: 0.45;
+}

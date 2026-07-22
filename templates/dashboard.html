@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NEXUS -- Multi-Modal Algorithmic Trading Terminal</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+
+  <!-- ==================== PAGE 1: LANDING (hero + status + Start Prediction only) ==================== -->
+  <section id="page-landing" class="nexus-page-landing">
+
+    <!-- ==================== HERO BANNER ==================== -->
+    <div class="nexus-hero">
+      <img id="nexus-hero-img"
+           src="{{ url_for('static', filename='img/hero_banner.png') }}"
+           onerror="this.onerror=null;this.src='{{ url_for('static', filename='img/hero_fallback.svg') }}';"
+           alt="NEXUS -- a cinematic ultra-wide digital artwork of a bull and bear market battle">
+      <div class="nexus-hero-overlay"></div>
+    </div>
+    <div class="nexus-hero-subtitle">
+      <h2>Multi-Modal Algorithmic Trading Terminal</h2>
+    </div>
+
+    <div class="container-fluid px-4 py-4">
+      <!-- ==================== DATA SUFFICIENCY / MANUAL TRIGGER ==================== -->
+      <div class="nexus-panel p-4">
+        <div class="nexus-section-title mb-1">Data Ingestion Status</div>
+        <div id="nexus-fetching-label" class="text-muted small mb-3">Fetching data...</div>
+        <div id="nexus-status-panel"></div>
+
+        <!-- Centered, inline with the NEXUS wordmark above -->
+        <div class="text-center mt-4">
+          <button id="start-prediction-btn" disabled>Start Prediction</button>
+          <div class="mt-2">
+            <a href="#" id="preview-page2-link" class="nexus-preview-link">Preview page 2 layout (no prediction needed)</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== PAGE 2: DETAILS (revealed after Start Prediction) ==================== -->
+  <section id="page-details" class="nexus-page-details" style="display:none;">
+    <div class="nexus-page-details-overlay"></div>
+
+    <div class="container-fluid px-4 py-4 position-relative">
+
+      <!-- ==================== PER-TICKER SLIDER ==================== -->
+      <div id="ticker-carousel" class="carousel slide nexus-ticker-carousel" data-bs-ride="false">
+        <div class="carousel-inner">
+          {% for ticker, name in tickers.items() %}
+          {% set sid = ticker|replace('.', '_')|replace('-', '_') %}
+          <div class="carousel-item {% if loop.first %}active{% endif %}">
+            <div class="nexus-stock-card">
+              <div class="nexus-stock-header">
+                <div>
+                  <h4>{{ name }}</h4>
+                  <div class="ticker-sub">{{ ticker }}</div>
+                </div>
+                <span id="winner-badge-{{ sid }}" class="status-pill ready">Awaiting forecast</span>
+              </div>
+
+              <div class="p-4">
+                <div id="winner-callout-{{ sid }}" class="winner-callout d-none">
+                  <div class="winner-callout-title">
+                    <span class="trophy">&#127942;</span>
+                    Best Performing Model: <span id="winner-callout-name-{{ sid }}" class="winner-callout-model-name">--</span>
+                  </div>
+                  <div class="winner-callout-stats">
+                    <span>Directional Win Rate: <strong id="winner-callout-winrate-{{ sid }}">--</strong></span>
+                    <span>Predicted Value: <strong id="winner-callout-predicted-{{ sid }}">--</strong></span>
+                  </div>
+                </div>
+                <div class="accordion mb-4" id="accordion-{{ sid }}">
+
+                  <!-- Sentiment Accordion -->
+                  <div class="accordion-item">
+                    <h2 class="accordion-header">
+                      <button class="accordion-button collapsed" type="button"
+                              data-bs-toggle="collapse" data-bs-target="#sentiment-collapse-{{ sid }}">
+                        Sentiment &amp; Recent News
+                      </button>
+                    </h2>
+                    <div id="sentiment-collapse-{{ sid }}" class="accordion-collapse collapse"
+                         data-bs-parent="#accordion-{{ sid }}">
+                      <div class="accordion-body">
+                        <div class="mb-2">
+                          Average Sentiment Score:
+                          <span id="sentiment-score-{{ sid }}" class="sentiment-badge neutral">--</span>
+                        </div>
+                        <div id="sentiment-list-{{ sid }}"></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Model Breakdown Accordion -->
+                  <div class="accordion-item">
+                    <h2 class="accordion-header">
+                      <button class="accordion-button collapsed" type="button"
+                              data-bs-toggle="collapse" data-bs-target="#model-collapse-{{ sid }}">
+                        Model Breakdown (MNN / Prophet / LSTM / XGBoost)
+                        <span class="info-tooltip ms-2" data-bs-toggle="tooltip" data-bs-placement="top"
+                              title="The best-performing model is highlighted below and all four models' predicted price paths are plotted on the Price Trend chart. Each model's metrics are computed independently -- nothing here is averaged.">&#9432;</span>
+                      </button>
+                    </h2>
+                    <div id="model-collapse-{{ sid }}" class="accordion-collapse collapse"
+                         data-bs-parent="#accordion-{{ sid }}">
+                      <div class="accordion-body">
+                        <div class="accordion" id="model-inner-accordion-{{ sid }}">
+                          {% for model_name in ["LSTM", "Prophet", "MNN", "XGBoost"] %}
+                          <div class="accordion-item model-efficiency-item" id="model-item-{{ model_name }}-{{ sid }}">
+                            <h2 class="accordion-header">
+                              <button class="accordion-button collapsed" type="button"
+                                      data-bs-toggle="collapse" data-bs-target="#model-{{ model_name }}-collapse-{{ sid }}">
+                                <span class="model-name-pill {{ model_name }} me-2">{{ model_name }}</span>
+                                <span class="best-model-badge d-none" id="best-badge-{{ model_name }}-{{ sid }}">Best Model</span>
+                                <span id="model-summary-{{ model_name }}-{{ sid }}" class="text-muted small">
+                                  Run "Start Prediction" to populate
+                                </span>
+                              </button>
+                            </h2>
+                            <div id="model-{{ model_name }}-collapse-{{ sid }}" class="accordion-collapse collapse"
+                                 data-bs-parent="#model-inner-accordion-{{ sid }}">
+                              <div class="accordion-body">
+                                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-5 g-3">
+                                  <!-- Card 1: Predicted Value -->
+                                  <div class="col">
+                                    <div class="metric-card">
+                                      <div class="metric-card-label">Predicted Value</div>
+                                      <div class="metric-card-value" id="predicted-value-{{ model_name }}-{{ sid }}">--</div>
+                                      <div class="metric-card-hint">Next-step forward price forecast</div>
+                                    </div>
+                                  </div>
+                                  <!-- Card 2: Baseline Accuracy (MAE / Error Margin) -->
+                                  <div class="col">
+                                    <div class="metric-card">
+                                      <div class="metric-card-label">Error Margin</div>
+                                      <div class="metric-card-value" id="mae-value-{{ model_name }}-{{ sid }}">--</div>
+                                      <div class="metric-card-hint">Mean Absolute Error, in currency units</div>
+                                    </div>
+                                  </div>
+                                  <!-- Card 3: Trading Viability (Directional Win Rate) -->
+                                  <div class="col">
+                                    <div class="metric-card">
+                                      <div class="metric-card-label">
+                                        Directional Win Rate
+                                        <span class="info-tooltip" data-bs-toggle="tooltip" data-bs-placement="top"
+                                              title="The percentage of test days where this model correctly predicted the price direction (up or down), regardless of the size of the move -- a higher value means it's more often right about which way the stock will move.">&#9432;</span>
+                                      </div>
+                                      <div class="metric-card-value" id="winrate-value-{{ model_name }}-{{ sid }}">--</div>
+                                      <div class="progress mt-2" style="height:8px;">
+                                        <div class="progress-bar" id="winrate-bar-{{ model_name }}-{{ sid }}"
+                                             role="progressbar" style="width:0%" aria-valuenow="0"
+                                             aria-valuemin="0" aria-valuemax="100"></div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <!-- Card 4: Tail Risk (RMSE / Volatility Risk) -->
+                                  <div class="col">
+                                    <div class="metric-card">
+                                      <div class="metric-card-label">
+                                        Volatility Risk (RMSE)
+                                        <span class="info-tooltip" data-bs-toggle="tooltip" data-bs-placement="top"
+                                              title="Root Mean Squared Error penalizes large misses more heavily than small ones -- a higher value means this model is more exposed to outlier errors during high-volatility market swings.">&#9432;</span>
+                                      </div>
+                                      <div class="metric-card-value" id="rmse-value-{{ model_name }}-{{ sid }}">--</div>
+                                      <div class="metric-card-hint">Outlier exposure, in currency units</div>
+                                    </div>
+                                  </div>
+                                  <!-- Card 5: Risk-Adjusted Performance (Sharpe Ratio) -->
+                                  <div class="col">
+                                    <div class="metric-card">
+                                      <div class="metric-card-label">
+                                        Sharpe Ratio
+                                        <span class="info-tooltip" data-bs-toggle="tooltip" data-bs-placement="top"
+                                              title="Simulates the simplest possible strategy: go long when this model predicts an up day, short when it predicts a down day, then measures the risk-adjusted return of that strategy (annualized, mean return / volatility of return). A model can have a decent Directional Win Rate but a poor Sharpe if it's right on quiet days and badly wrong on volatile ones -- this captures that risk, which RMSE/MAE/Win Rate alone don't.">&#9432;</span>
+                                      </div>
+                                      <div class="metric-card-value" id="sharpe-value-{{ model_name }}-{{ sid }}">--</div>
+                                      <div class="metric-card-hint">Annualized, simple long/short strategy</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          {% endfor %}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Graphs / Trends -->
+                <div class="nexus-section-title">Graphs &amp; Trends</div>
+                <div class="btn-group chart-toggle-group mb-2" id="chart-toggle-{{ sid }}" role="group">
+                  <button type="button" class="btn btn-outline-secondary active" data-chart="price">Price Trend</button>
+                  <button type="button" class="btn btn-outline-secondary" data-chart="sentiment">Sentiment Overlay</button>
+                  <button type="button" class="btn btn-outline-secondary" data-chart="models">Model Comparison</button>
+                  <button type="button" class="btn btn-outline-secondary" data-chart="live">Live Price</button>
+                </div>
+
+                <div id="chart-wrap-price-{{ sid }}" class="chart-canvas-wrap" style="display:block;">
+                  <canvas id="chart-price-{{ sid }}"></canvas>
+                </div>
+                <div id="chart-wrap-sentiment-{{ sid }}" class="chart-canvas-wrap" style="display:none;">
+                  <canvas id="chart-sentiment-{{ sid }}"></canvas>
+                </div>
+                <div id="chart-wrap-models-{{ sid }}" class="chart-canvas-wrap" style="display:none;">
+                  <canvas id="chart-models-{{ sid }}"></canvas>
+                </div>
+                <div id="chart-wrap-live-{{ sid }}" class="chart-canvas-wrap chart-canvas-wrap-live" style="display:none;">
+                  <div class="live-price-readout" id="live-readout-{{ sid }}">
+                    <span class="live-dot" id="live-dot-{{ sid }}"></span>
+                    <span class="live-price-value" id="live-price-value-{{ sid }}">--</span>
+                    <span class="live-price-change" id="live-price-change-{{ sid }}"></span>
+                    <span class="live-price-asof" id="live-price-asof-{{ sid }}">Waiting for live tick...</span>
+                  </div>
+                  <div class="live-canvas-inner">
+                    <canvas id="chart-live-{{ sid }}"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <button class="carousel-control-prev" type="button" data-bs-target="#ticker-carousel" data-bs-slide="prev">
+          <span class="nexus-carousel-arrow" aria-hidden="true">&#10094;</span>
+          <span class="visually-hidden">Previous ticker</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#ticker-carousel" data-bs-slide="next">
+          <span class="nexus-carousel-arrow" aria-hidden="true">&#10095;</span>
+          <span class="visually-hidden">Next ticker</span>
+        </button>
+        <div class="carousel-indicators nexus-carousel-indicators">
+          {% for ticker, name in tickers.items() %}
+          <button type="button" data-bs-target="#ticker-carousel" data-bs-slide-to="{{ loop.index0 }}"
+                  {% if loop.first %}class="active" aria-current="true"{% endif %}
+                  aria-label="{{ ticker }}"></button>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- ==================== PORTFOLIO MANAGEMENT ==================== -->
+      <div class="nexus-panel mt-4 mb-5 p-4" id="nexus-portfolio-panel">
+        <div class="nexus-section-title mb-3 d-flex align-items-center gap-2">
+          Portfolio Management
+          <span class="info-tooltip" data-bs-toggle="tooltip" data-bs-placement="right"
+                title="Markowitz mean-variance optimization using each stock's historical return and volatility -- model-independent, long-only, fully-invested, and rounded to whole shares (NSE has no fractional shares).">&#9432;</span>
+        </div>
+
+        <form id="portfolio-form" class="row g-3 align-items-end">
+          <div class="col-12">
+            <label class="form-label small text-muted mb-2 d-block">Tickers to include</label>
+            <div class="d-flex flex-wrap gap-3" id="portfolio-ticker-checks">
+              {% for ticker, name in tickers.items() %}
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" value="{{ ticker }}"
+                       id="portfolio-ticker-{{ loop.index0 }}" checked>
+                <label class="form-check-label small" for="portfolio-ticker-{{ loop.index0 }}">
+                  {{ name }} <span class="text-muted">({{ ticker }})</span>
+                </label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="col-sm-4 col-6">
+            <label class="form-label small text-muted" for="portfolio-amount-min">Amount -- Min (&#8377;)</label>
+            <input type="number" class="form-control form-control-sm" id="portfolio-amount-min"
+                   min="1" step="1000" placeholder="e.g. 1000000" required>
+          </div>
+          <div class="col-sm-4 col-6">
+            <label class="form-label small text-muted" for="portfolio-amount-max">
+              Amount -- Max (&#8377;)
+              <span class="info-tooltip" data-bs-toggle="tooltip" data-bs-placement="top"
+                    title="Leave blank to treat this as an exact amount, same as Min. A range lets the whole-share rounding step use whatever fits best inside the band instead of forcing one exact number.">&#9432;</span>
+            </label>
+            <input type="number" class="form-control form-control-sm" id="portfolio-amount-max"
+                   min="1" step="1000" placeholder="optional -- defaults to Min">
+          </div>
+          <div class="col-sm-4 col-12">
+            <label class="form-label small text-muted" for="portfolio-horizon">Investment Horizon</label>
+            <select class="form-select form-select-sm" id="portfolio-horizon">
+              <option value="short">Short-term (&lt; 1 year) -- capital preservation</option>
+              <option value="medium" selected>Medium-term (1-3 years) -- balanced</option>
+              <option value="long">Long-term (3+ years) -- growth-oriented</option>
+            </select>
+          </div>
+
+          <div class="col-12">
+            <button type="submit" class="btn" id="portfolio-submit-btn"
+                    style="background: linear-gradient(90deg,var(--nexus-magenta),var(--nexus-cyan)); color:#04050c; font-weight:700;">
+              Optimize Portfolio
+            </button>
+            <span class="text-muted small ms-2" id="portfolio-form-error"></span>
+          </div>
+        </form>
+
+        <div id="portfolio-results" class="mt-4 d-none">
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <span class="status-pill ready" id="portfolio-objective-badge">--</span>
+            <span class="text-muted small" id="portfolio-under-min-note"></span>
+          </div>
+
+          <div class="row row-cols-1 row-cols-md-3 g-3 mb-3" id="portfolio-summary-cards">
+            <div class="col">
+              <div class="metric-card">
+                <div class="metric-card-label">Expected Annual Return</div>
+                <div class="metric-card-value" id="portfolio-expected-return">--</div>
+              </div>
+            </div>
+            <div class="col">
+              <div class="metric-card">
+                <div class="metric-card-label">Annual Volatility</div>
+                <div class="metric-card-value" id="portfolio-volatility">--</div>
+              </div>
+            </div>
+            <div class="col">
+              <div class="metric-card">
+                <div class="metric-card-label">Portfolio Sharpe Ratio</div>
+                <div class="metric-card-value" id="portfolio-sharpe">--</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-responsive mb-3">
+            <table class="table table-sm nexus-portfolio-table">
+              <thead>
+                <tr><th>Ticker</th><th>Weight</th><th>Price</th><th>Shares</th><th>Allocated</th></tr>
+              </thead>
+              <tbody id="portfolio-breakdown-body"></tbody>
+            </table>
+          </div>
+          <div class="text-muted small mb-3" id="portfolio-cash-note"></div>
+
+          <div class="chat-bubble ai" id="portfolio-explanation" style="max-width:100%;"></div>
+
+          <div class="text-muted small mt-2">For research purposes only, not investment advice.</div>
+        </div>
+      </div>
+
+      <footer class="nexus-footer">
+        NEXUS &middot; Multi-Modal Algorithmic Trading Terminal &middot; For research purposes only, not investment advice.
+        <div class="nexus-watermark">Built by Harsh Joshi</div>
+      </footer>
+    </div>
+  </section>
+
+  <!-- ==================== TOASTS ==================== -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1080;">
+    <div id="toast-live-data" class="toast" role="status">
+      <div class="toast-header">
+        <strong class="me-auto">Storing live data</strong>
+        <span class="toast-percent small text-muted">0%</span>
+      </div>
+      <div class="toast-body">
+        <div class="progress"><div class="progress-bar" style="width:0%"></div></div>
+      </div>
+    </div>
+    <div id="toast-sentiment-news" class="toast" role="status">
+      <div class="toast-header">
+        <strong class="me-auto">Storing sentiment / news</strong>
+        <span class="toast-percent small text-muted">0%</span>
+      </div>
+      <div class="toast-body">
+        <div class="progress"><div class="progress-bar" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== INVESTRA (floating chat widget, bottom-right, site-wide) ====================
+       Branding (name/tagline/opening message/logo) is driven entirely by
+       INVESTRA_CONFIG in app.py -> window.NEXUS_INVESTRA_CONFIG below --
+       edit that one dict to reskin this without touching any markup here. -->
+  <div id="investra-launcher" class="investra-launcher" role="button" tabindex="0" aria-label="Open INVESTRA chat">
+    <span class="investra-avatar" id="investra-launcher-avatar">I</span>
+  </div>
+
+  <div id="investra-panel" class="investra-panel d-none">
+    <div class="investra-header">
+      <div class="investra-header-identity">
+        <span class="investra-avatar investra-avatar-sm" id="investra-avatar">I</span>
+        <div>
+          <div class="investra-name" id="investra-name">INVESTRA</div>
+          <div class="investra-tagline" id="investra-tagline">Your AI Trading &amp; Portfolio Advisor</div>
+        </div>
+      </div>
+      <button type="button" class="investra-close-btn" id="investra-close-btn" aria-label="Close INVESTRA chat">&times;</button>
+    </div>
+    <div id="nexus-chat-messages" class="investra-messages"></div>
+    <form id="nexus-chat-form" class="d-flex investra-form" role="form">
+      <select id="nexus-chat-ticker" class="form-select form-select-sm me-2">
+        <option value="">All</option>
+        {% for ticker, name in tickers.items() %}
+        <option value="{{ ticker }}">{{ ticker }}</option>
+        {% endfor %}
+      </select>
+      <div id="nexus-chat-input-row" class="flex-grow-1 d-flex gap-2 p-0 border-0">
+        <input id="nexus-chat-input" type="text" class="form-control" placeholder="Ask INVESTRA...">
+        <button type="submit" class="btn" style="background: linear-gradient(90deg,var(--nexus-magenta),var(--nexus-cyan)); color:#04050c; font-weight:700;">Send</button>
+      </div>
+    </form>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    window.NEXUS_TICKERS = {{ tickers|tojson }};
+    window.NEXUS_INVESTRA_CONFIG = {{ investra_config|tojson }};
+    {% if investra_config.logo_filename %}
+    window.NEXUS_INVESTRA_CONFIG.logo_url = "{{ url_for('static', filename='img/' ~ investra_config.logo_filename) }}";
+    {% endif %}
+  </script>
+  <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>

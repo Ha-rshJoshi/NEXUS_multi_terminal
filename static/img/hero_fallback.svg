@@ -1,0 +1,68 @@
+<svg viewBox="0 0 1600 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bgGlow" cx="50%" cy="35%" r="75%">
+      <stop offset="0%" stop-color="#0c1230"/>
+      <stop offset="55%" stop-color="#070a1c"/>
+      <stop offset="100%" stop-color="#050814"/>
+    </radialGradient>
+    <linearGradient id="bullGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c026f7"/>
+      <stop offset="100%" stop-color="#22d3ee"/>
+    </linearGradient>
+    <linearGradient id="bearGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fb923c"/>
+      <stop offset="100%" stop-color="#38bdf8"/>
+    </linearGradient>
+    <linearGradient id="candleUp" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#0891b2"/>
+    </linearGradient>
+    <linearGradient id="candleDown" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f472b6"/>
+      <stop offset="100%" stop-color="#be185d"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="1600" height="500" fill="url(#bgGlow)"/>
+
+  <!-- faint grid -->
+  <g stroke="#1c2444" stroke-width="1" opacity="0.5">
+    <line x1="0" y1="100" x2="1600" y2="100"/>
+    <line x1="0" y1="200" x2="1600" y2="200"/>
+    <line x1="0" y1="300" x2="1600" y2="300"/>
+    <line x1="0" y1="400" x2="1600" y2="400"/>
+  </g>
+
+  <!-- background candlesticks -->
+  <g opacity="0.55">
+    <rect x="60" y="260" width="10" height="90" fill="url(#candleUp)"/>
+    <rect x="90" y="220" width="10" height="130" fill="url(#candleDown)"/>
+    <rect x="120" y="240" width="10" height="70" fill="url(#candleUp)"/>
+    <rect x="150" y="200" width="10" height="150" fill="url(#candleUp)"/>
+    <rect x="1400" y="230" width="10" height="110" fill="url(#candleDown)"/>
+    <rect x="1430" y="180" width="10" height="160" fill="url(#candleUp)"/>
+    <rect x="1460" y="250" width="10" height="80" fill="url(#candleDown)"/>
+    <rect x="1490" y="210" width="10" height="140" fill="url(#candleDown)"/>
+  </g>
+
+  <!-- stylized bull silhouette (left) -->
+  <g fill="none" stroke="url(#bullGrad)" stroke-width="3" opacity="0.9">
+    <polygon points="180,420 220,300 260,260 320,230 380,220 420,190 460,210 430,240 460,260 410,270 400,320 440,340 400,360 360,420"/>
+    <polygon points="380,220 400,170 430,190 415,225"/>
+    <circle cx="418" cy="205" r="4" fill="#67e8f9" stroke="none"/>
+  </g>
+
+  <!-- stylized bear silhouette (right) -->
+  <g fill="none" stroke="url(#bearGrad)" stroke-width="3" opacity="0.9">
+    <polygon points="1420,420 1400,320 1360,280 1340,230 1300,210 1260,230 1230,210 1210,240 1240,260 1200,290 1220,330 1180,360 1220,420"/>
+    <circle cx="1225" cy="222" r="4" fill="#fdba74" stroke="none"/>
+  </g>
+
+  <!-- NEXUS wordmark -->
+  <text x="800" y="255" text-anchor="middle" font-family="Arial, Helvetica, sans-serif"
+        font-size="120" font-weight="800" letter-spacing="10" fill="#f5f7ff"
+        style="text-shadow: 0 0 30px rgba(103,232,249,0.6);">NEXUS</text>
+
+  <!-- small zigzag accent inside wordmark -->
+  <polyline points="700,240 720,270 740,220 760,260 780,235" fill="none" stroke="#22d3ee" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
