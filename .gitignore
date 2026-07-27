@@ -22,7 +22,3 @@ model_registry.json
 .idea/
 .DS_Store
 Thumbs.db
-
-# Documentation PDFs -- kept locally, not tracked in the repo
-NEXUS_Codebase_Walkthrough.pdf
-NEXUS_Full_Project_Documentation.pdf
