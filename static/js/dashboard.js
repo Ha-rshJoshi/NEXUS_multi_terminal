@@ -524,8 +524,6 @@
       models: new Chart(modelCtx, {
         type: "bar",
         data: { labels: [], datasets: [
-          { label: "Predicted", data: [], backgroundColor: "#22d3ee" },
-          { label: "Past Day (Actual)", data: [], backgroundColor: "#8b93c4" },
           { label: "Error Margin", data: [], backgroundColor: "#f87171" },
         ] },
         options: chartBaseOptions("Model Comparison"),
@@ -591,9 +589,7 @@
 
       const models = payload.model_comparison || [];
       c.models.data.labels = models.map((m) => m.model_name);
-      c.models.data.datasets[0].data = models.map((m) => m.predicted_value);
-      c.models.data.datasets[1].data = models.map((m) => m.past_day_value);
-      c.models.data.datasets[2].data = models.map((m) => m.error_margin);
+      c.models.data.datasets[0].data = models.map((m) => m.error_margin);
       c.models.update();
 
       await loadLiveTicks(ticker);
