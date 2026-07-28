@@ -166,16 +166,24 @@
   }
 
   // ------------------------------------------------------------------
-  // Socket.IO
+  // Socket.IO -- guarded so a failed/blocked CDN load for this script
+  // (e.g. a network that blocks cdn.socket.io) degrades to "no live
+  // progress toasts" instead of throwing and killing the whole file,
+  // which would otherwise also take down status polling/prediction/
+  // portfolio/chat below.
   // ------------------------------------------------------------------
-  const socket = io();
-  socket.on("connect", () => console.log("[NEXUS] socket connected"));
-  socket.on("progress", (data) => {
-    updateToastProgress(data.channel, data.percent);
-  });
-  socket.on("ingestion_complete", () => {
-    refreshStatus();
-  });
+  const socket = typeof io === "function" ? io() : null;
+  if (socket) {
+    socket.on("connect", () => console.log("[NEXUS] socket connected"));
+    socket.on("progress", (data) => {
+      updateToastProgress(data.channel, data.percent);
+    });
+    socket.on("ingestion_complete", () => {
+      refreshStatus();
+    });
+  } else {
+    console.warn("[NEXUS] Socket.IO client unavailable -- ingestion progress toasts disabled, but status polling continues.");
+  }
 
   // ------------------------------------------------------------------
   // /api/status polling -> gates the Start Prediction button
