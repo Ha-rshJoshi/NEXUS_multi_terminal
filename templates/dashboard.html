@@ -62,6 +62,10 @@
                   <div class="ticker-sub">{{ ticker }}</div>
                 </div>
                 <span id="winner-badge-{{ sid }}" class="status-pill ready">Awaiting forecast</span>
+                <button type="button" class="btn btn-sm btn-outline-light ms-2 d-none"
+                        id="download-report-btn-{{ sid }}" data-ticker="{{ ticker }}">
+                  Download Report
+                </button>
               </div>
 
               <div class="p-4">
@@ -340,6 +344,11 @@
           <div class="text-muted small mb-3" id="portfolio-cash-note"></div>
 
           <div class="chat-bubble ai" id="portfolio-explanation" style="max-width:100%;"></div>
+
+          <button type="button" class="btn btn-sm mt-3" id="download-full-report-btn"
+                  style="background: linear-gradient(90deg,var(--nexus-magenta),var(--nexus-cyan)); color:#04050c; font-weight:700;">
+            Download Full Report (PDF)
+          </button>
 
           <div class="text-muted small mt-2">For research purposes only, not investment advice.</div>
         </div>

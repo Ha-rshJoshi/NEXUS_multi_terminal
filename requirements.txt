@@ -20,3 +20,5 @@ yfinance
 finnhub-python
 tenacity
 joblib
+reportlab
+matplotlib

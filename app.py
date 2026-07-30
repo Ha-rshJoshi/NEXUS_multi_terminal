@@ -1,12 +1,13 @@
 """NEXUS Flask application -- ties ingestion, the four-model forecast,
 portfolio optimization, and the INVESTRA RAG chat into the dashboard."""
 
+import io
 import json
 import logging
 import os
 import threading
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, send_file
 from google import genai
 from groq import Groq
 
@@ -462,6 +463,114 @@ verbatim, the user can already see them -- interpret them instead. {PLAIN_TEXT_S
     result["explanation"] = explanation
     result["explained_by"] = explained_by
     return jsonify(result)
+
+
+# ---------------------------------------------------------------------------
+# PDF reports -- built from data the frontend already fetched (a /api/predict
+# ticker report, and/or the current /api/portfolio_optimize result and
+# INVESTRA chat transcript), so generating a PDF never re-runs a backtest.
+# ---------------------------------------------------------------------------
+def _ticker_ai_summary(ticker, ticker_report):
+    """Short Gemini/Groq-written paragraph explaining the winning model for
+    one ticker's report, in the same voice/plain-text style as /api/chat
+    and the portfolio auto-explain."""
+    try:
+        prompt = f"""You are INVESTRA, the NEXUS Execution Desk AI. A backtest for {ticker}
+just produced this per-model report:
+
+{json.dumps(ticker_report, indent=2, default=str)}
+
+In 2-4 concise, clinical sentences, explain why "{ticker_report.get('winner')}"
+outperformed the other models on this backtest, and give a one-line
+deployment takeaway. Do not restate every number verbatim -- interpret them.
+{PLAIN_TEXT_STYLE}"""
+        summary, _ = _generate_rag_response(prompt)
+        return summary
+    except Exception as e:
+        logging.warning(f"[app] AI analyst summary failed for {ticker} (report still generated): {e}")
+        return None
+
+
+def _ticker_report_section(ticker, ticker_report):
+    """Gathers everything report_generator needs for one ticker's section:
+    display name, currency, historical price series for the chart, sentiment
+    summary, and an AI analyst summary."""
+    price_rows = (
+        StockPrice.query.filter_by(ticker=ticker, source="historical")
+        .order_by(StockPrice.date.asc())
+        .all()
+    )
+    avg_sentiment, sentiment_items = _ticker_sentiment_summary(ticker)
+
+    return {
+        "ticker": ticker,
+        "display_name": TICKERS.get(ticker, ticker),
+        "currency_symbol": "₹" if ticker.endswith((".NS", ".BO")) else "$",
+        "ticker_report": ticker_report,
+        "sentiment_summary": {
+            "average_sentiment": avg_sentiment,
+            "headlines": sentiment_items[:5],
+        },
+        "ai_summary": _ticker_ai_summary(ticker, ticker_report),
+        "price_dates": [r.date for r in price_rows],
+        "price_closes": [r.close for r in price_rows],
+    }
+
+
+@app.route("/api/report/ticker_pdf", methods=["POST"])
+def report_ticker_pdf():
+    data = request.json or {}
+    ticker = data.get("ticker")
+    ticker_report = data.get("report")
+    if ticker not in TICKERS:
+        return jsonify({"error": "Unknown ticker"}), 404
+    if not ticker_report:
+        return jsonify({"error": "'report' (the /api/predict result for this ticker) is required."}), 400
+
+    import report_generator as rg
+
+    try:
+        section = _ticker_report_section(ticker, ticker_report)
+        pdf_bytes = rg.build_ticker_pdf(
+            section["ticker"], section["display_name"], section["currency_symbol"],
+            section["ticker_report"], section["sentiment_summary"], section["ai_summary"],
+            section["price_dates"], section["price_closes"],
+        )
+    except Exception as e:
+        logging.error(f"[app] /api/report/ticker_pdf failed for {ticker}: {e}", exc_info=True)
+        return jsonify({"error": "Failed to generate report."}), 500
+
+    safe_ticker = ticker.replace(".", "_")
+    return send_file(
+        io.BytesIO(pdf_bytes), mimetype="application/pdf", as_attachment=True,
+        download_name=f"NEXUS_{safe_ticker}_Report.pdf",
+    )
+
+
+@app.route("/api/report/full_pdf", methods=["POST"])
+def report_full_pdf():
+    data = request.json or {}
+    tickers_reports = data.get("tickers_reports") or {}
+    portfolio_result = data.get("portfolio_result")
+    chat_transcript = data.get("chat_transcript") or []
+
+    valid_reports = {t: r for t, r in tickers_reports.items() if t in TICKERS and r}
+    if not valid_reports:
+        return jsonify({"error": "No valid ticker reports were supplied."}), 400
+
+    import report_generator as rg
+
+    try:
+        sections = [_ticker_report_section(t, r) for t, r in valid_reports.items()]
+        pdf_bytes = rg.build_full_report_pdf(sections, portfolio_result, chat_transcript)
+    except Exception as e:
+        logging.error(f"[app] /api/report/full_pdf failed: {e}", exc_info=True)
+        return jsonify({"error": "Failed to generate full report."}), 500
+
+    return send_file(
+        io.BytesIO(pdf_bytes), mimetype="application/pdf", as_attachment=True,
+        download_name="NEXUS_Full_Report.pdf",
+    )
 
 
 @app.route("/", methods=["GET"])

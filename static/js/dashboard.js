@@ -39,6 +39,15 @@
   // { ticker: { modelName: { predicted_series: [{date, predicted_price, actual_price}], color } } }
   const predictionCache = {};
 
+  // { ticker: full tickerReport object from /api/predict } -- kept as-is
+  // (not just the pieces rendered to the DOM) so a PDF report can be built
+  // from it later without re-running the backtest.
+  const predictionReports = {};
+
+  // Every INVESTRA chat message this session, in order -- used only for the
+  // "Download Full Report" PDF; never persisted beyond the page's lifetime.
+  const chatTranscript = [];
+
   function safeId(ticker) {
     return ticker.replace(/[^a-zA-Z0-9]/g, "_");
   }
@@ -286,7 +295,14 @@
       });
       const payload = await res.json();
       Object.entries(payload.report || {}).forEach(([ticker, tickerReport]) => {
+        predictionReports[ticker] = tickerReport;
         renderModelBreakdown(ticker, tickerReport);
+
+        const downloadBtn = document.getElementById(`download-report-btn-${safeId(ticker)}`);
+        if (downloadBtn) {
+          downloadBtn.classList.remove("d-none");
+          downloadBtn.onclick = () => downloadTickerReport(ticker);
+        }
       });
       revealPageDetails();
       await Promise.all(tickerIds.map((t) => loadChartData(t)));
@@ -745,6 +761,7 @@
     bubble.textContent = text;
     chatMessages.appendChild(bubble);
     chatMessages.scrollTop = chatMessages.scrollHeight;
+    chatTranscript.push({ role, text });
     return bubble;
   }
 
@@ -909,6 +926,76 @@
       } finally {
         portfolioSubmitBtn.disabled = false;
         portfolioSubmitBtn.textContent = "Optimize Portfolio";
+      }
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // PDF report downloads -- both routes return a raw PDF; fetched as a
+  // blob and downloaded via a throwaway <a>, since these aren't simple
+  // GET links (they need a JSON body of data already sitting in memory).
+  // ------------------------------------------------------------------
+  async function downloadPdfBlob(url, body, filename) {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      throw new Error(payload.error || `Report generation failed (${res.status}).`);
+    }
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(blobUrl);
+  }
+
+  async function downloadTickerReport(ticker) {
+    const btn = document.getElementById(`download-report-btn-${safeId(ticker)}`);
+    const report = predictionReports[ticker];
+    if (!report) return;
+    if (btn) { btn.disabled = true; btn.textContent = "Generating..."; }
+    try {
+      await downloadPdfBlob(
+        "/api/report/ticker_pdf",
+        { ticker, report },
+        `NEXUS_${ticker.replace(".", "_")}_Report.pdf`,
+      );
+    } catch (err) {
+      console.error("[NEXUS] ticker report download failed", err);
+      alert(err.message || "Report generation failed.");
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = "Download Report"; }
+    }
+  }
+
+  const downloadFullReportBtn = document.getElementById("download-full-report-btn");
+  if (downloadFullReportBtn) {
+    downloadFullReportBtn.addEventListener("click", async () => {
+      downloadFullReportBtn.disabled = true;
+      downloadFullReportBtn.textContent = "Generating...";
+      try {
+        await downloadPdfBlob(
+          "/api/report/full_pdf",
+          {
+            tickers_reports: predictionReports,
+            portfolio_result: lastPortfolioResult,
+            chat_transcript: chatTranscript,
+          },
+          "NEXUS_Full_Report.pdf",
+        );
+      } catch (err) {
+        console.error("[NEXUS] full report download failed", err);
+        alert(err.message || "Report generation failed.");
+      } finally {
+        downloadFullReportBtn.disabled = false;
+        downloadFullReportBtn.textContent = "Download Full Report (PDF)";
       }
     });
   }
