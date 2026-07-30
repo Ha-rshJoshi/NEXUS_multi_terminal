@@ -6,10 +6,12 @@ import json
 import logging
 import os
 import threading
+import time
 
 from flask import Flask, jsonify, render_template, request, send_file
 from google import genai
-from groq import Groq
+from groq import Groq, RateLimitError as GroqRateLimitError
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from chroma_store import embed_query, get_news_collection
 from data_engine import DataEngine
@@ -287,11 +289,29 @@ def news_feed(ticker):
 # ---------------------------------------------------------------------------
 # RAG chat endpoint
 # ---------------------------------------------------------------------------
+@retry(
+    reraise=True,
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=2, min=2, max=15),
+    retry=retry_if_exception_type(GroqRateLimitError),
+)
+def _call_groq(prompt):
+    """Groq call, retried a couple of times with backoff on 429 -- Gemini
+    being down (see _generate_rag_response) can suddenly send every request
+    through Groq at once, which is enough to trip its own free-tier rate
+    limit even though each individual call would normally be fine."""
+    completion = groq_client.chat.completions.create(
+        model=GROQ_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return completion.choices[0].message.content
+
+
 def _generate_rag_response(prompt):
     """Tries Gemini first; on failure (typically a 429 once the free tier's
-    quota is used up) falls back to Groq. Returns (response_text,
-    provider_label). Raises if neither client is configured, or the last
-    exception if both fail."""
+    quota is used up, or a 5xx when Gemini itself is overloaded) falls back
+    to Groq. Returns (response_text, provider_label). Raises if neither
+    client is configured, or the last exception if both fail."""
     if gemini_client:
         try:
             response = gemini_client.models.generate_content(
@@ -307,11 +327,7 @@ def _generate_rag_response(prompt):
                 raise
 
     if groq_client:
-        completion = groq_client.chat.completions.create(
-            model=GROQ_MODEL,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        return completion.choices[0].message.content, GROQ_MODEL
+        return _call_groq(prompt), GROQ_MODEL
 
     raise RuntimeError("No RAG generation provider is configured (GEMINI_API_KEY and GROQ_API_KEY both absent).")
 
@@ -561,7 +577,16 @@ def report_full_pdf():
     import report_generator as rg
 
     try:
-        sections = [_ticker_report_section(t, r) for t, r in valid_reports.items()]
+        # Spaced out rather than back-to-back: each ticker triggers its own
+        # AI analyst summary call, and firing them all at once is what
+        # tripped Groq's rate limit the one time Gemini was down for every
+        # single one of them (see _call_groq's retry for the remaining risk).
+        items = list(valid_reports.items())
+        sections = []
+        for i, (t, r) in enumerate(items):
+            sections.append(_ticker_report_section(t, r))
+            if i < len(items) - 1:
+                time.sleep(1.2)
         pdf_bytes = rg.build_full_report_pdf(sections, portfolio_result, chat_transcript)
     except Exception as e:
         logging.error(f"[app] /api/report/full_pdf failed: {e}", exc_info=True)
